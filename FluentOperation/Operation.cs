@@ -6,7 +6,9 @@ public class Operation<TResult> where TResult : class
 {
     private Func<TResult>? _operationLambda;
     private Func<Exception, string>? _exceptionLambda;
-    private readonly Queue<(Func<TResult, bool> challenge, string failedMessage)> _orSuccessChallenges = new();
+    private (Func<TResult, bool> challenge, string failedChallengeMessage)? _mainChallenge = null;
+
+    private readonly Queue<Func<TResult, bool>> _orSuccessChallenges = new();
     public bool IsExecuted { private set; get; }
 
     /// <summary>
@@ -23,13 +25,33 @@ public class Operation<TResult> where TResult : class
     }
 
     /// <summary>
-    /// Add or logic challenge against result that created on execution phase.
+    /// Main challenge will be executed against the result of main operation leave it blank if you want to handle challenges with exceptions
+    /// </summary>
+    /// <param name="challengeLambda">Lambda that indicates the challenge against result</param>
+    /// <param name="failedChallengeMessage">Failed user-friendly message when the challenge aborted</param>
+    /// <returns></returns>
+    public Operation<TResult> SetChallenge(Func<TResult, bool> challengeLambda, string failedChallengeMessage)
+    {
+        _mainChallenge = new()
+        {
+            challenge = challengeLambda,
+            failedChallengeMessage = failedChallengeMessage
+        };
+        return this;
+    }
+
+    /// <summary>
+    /// Add or logic challenge against result with main challenge that created on execution phase.
     /// Consider that the challenge lambda must not throw any exception.
+    /// The main challenge must be set
     /// </summary>
     /// <param name="challengeLambda">Or Challenge Lambda</param>
-    public Operation<TResult> SetOrSuccessIf(Func<TResult, bool> challengeLambda, string challengeFailedMessage)
+    /// <exception cref="InvalidOperationException">When the main challenge has not set</exception>
+    public Operation<TResult> SetOrSuccessIf(Func<TResult, bool> challengeLambda)
     {
-        _orSuccessChallenges.Enqueue((challengeLambda, challengeFailedMessage));
+        if (_mainChallenge is null)
+            throw new InvalidOperationException("There is no main challenge to make it Or logic");
+        _orSuccessChallenges.Enqueue((challengeLambda));
         return this;
     }
 
@@ -58,33 +80,45 @@ public class Operation<TResult> where TResult : class
             throw new InvalidOperationException("Operation lambda must be set before execute operation");
 
         var operationResult = ExecuteOperation();
-        var finalResult = ExecuteSuccessOrChallenges(operationResult);
-
+        var mainChallengeStatus = ExecuteMainChallenge(operationResult);
+        var finalResult = ExecuteSuccessOrChallenges(operationResult, mainChallengeStatus);
         return finalResult;
     }
 
-    private OperationResult<TResult> ExecuteSuccessOrChallenges(OperationResult<TResult> operationResult)
+    private ChallengeResult ExecuteMainChallenge(OperationResult<TResult> operationResult)
     {
-        if (operationResult is { IsSuccess: false } or { Result: null } || !_orSuccessChallenges.Any())
-            return operationResult;
-        ChallengeResult finalChallengeResult = null;
-        foreach (var challengeWrapper in _orSuccessChallenges)
-        {
-            var challengeResult = challengeWrapper.challenge(operationResult.Result);
-            finalChallengeResult = new ChallengeResult
+        if (operationResult is { IsSuccess: false } or { Result: null } || _mainChallenge is null)
+            return new ChallengeResult
             {
-                IsSuccess = challengeResult,
-                ChallengeResultMessage = challengeWrapper.failedMessage
+                IsSuccess = true
             };
-            if (!challengeResult) break; // Short circuit
+
+        var challengeResult = _mainChallenge.Value.challenge(operationResult.Result);
+        return new ChallengeResult
+        {
+            IsSuccess = challengeResult,
+            ChallengeResultMessage = _mainChallenge.Value.failedChallengeMessage
+        };
+    }
+
+    private OperationResult<TResult> ExecuteSuccessOrChallenges(
+        OperationResult<TResult> operationResult,
+        ChallengeResult mainChallengeResult)
+    {
+        if (mainChallengeResult.IsSuccess) return operationResult;
+        
+        bool overallStatus = false;
+        foreach (var challenge in _orSuccessChallenges)
+        {
+            var challengeResult = challenge(operationResult.Result);
+            overallStatus = challengeResult;
+            if (challengeResult) break; // Short circuit
         }
 
         return new OperationResult<TResult>
         {
-            Result = finalChallengeResult!.IsSuccess ? operationResult.Result : null,
-            Failure = finalChallengeResult!.IsSuccess
-                ? null
-                : new OperationFailure(userMessage: finalChallengeResult!.ChallengeResultMessage)
+            Result = overallStatus ? operationResult.Result : null,
+            Failure = overallStatus ? null : new OperationFailure(mainChallengeResult.ChallengeResultMessage)
         };
     }
 

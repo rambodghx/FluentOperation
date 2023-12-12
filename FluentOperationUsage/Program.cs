@@ -7,7 +7,8 @@ var op = new OperationSample();
 var res = OperationBuilder
     .CreateOperation<string>()
     .SetOperation(() => op.SayHello("well"))
-    .SetOrSuccessIf(re => !re.Any(),"There is text!!")
+    .SetChallenge(rs=>!rs.Contains("ss"),"There is no ss")
+    .SetOrSuccessIf(rs=>rs.Contains("we"))
     .Execute();
 
 Console.WriteLine(res);
