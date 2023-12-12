@@ -2,6 +2,15 @@ namespace FluentOperation;
 
 public class OperationFailure
 {
-    public string UserMessage { get; init; } = null!;
+    public OperationFailure()
+    {
+    }
+
+    public OperationFailure(string? userMessage)
+    {
+        UserMessage = userMessage;
+    }
+
+    public string? UserMessage { get; init; }
     public Exception? Exception { get; init; }
 }
