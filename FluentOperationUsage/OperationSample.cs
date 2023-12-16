@@ -9,7 +9,7 @@ public class OperationSample
 
     public string SayHello(string status)
     {
-        return status + " ss";
+        return "Hello "+status ;
     }
     
 }

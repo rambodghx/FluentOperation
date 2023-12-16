@@ -2,13 +2,14 @@ using System.Linq.Expressions;
 
 namespace FluentOperation;
 
-public class Operation<TResult> where TResult : class
+public sealed class Operation<TResult> where TResult : class
 {
     private Func<TResult>? _operationLambda;
     private Func<Exception, string>? _exceptionLambda;
     private (Func<TResult, bool> challenge, string failedChallengeMessage)? _mainChallenge = null;
 
     private readonly Queue<Func<TResult, bool>> _orSuccessChallenges = new();
+    private readonly Queue<(Func<TResult, bool> challenge, string failedMessage)> _andSuccessChallenges = new();
     public bool IsExecuted { private set; get; }
 
     /// <summary>
@@ -56,6 +57,22 @@ public class Operation<TResult> where TResult : class
     }
 
     /// <summary>
+    /// Add and logic challenge against result with main challenge that created on execution phase.
+    /// Consider that the challenge lambda must not throw any exception.
+    /// The main challenge must be set
+    /// </summary>
+    /// <param name="challengeLambda">Or Challenge Lambda</param>
+    /// <exception cref="InvalidOperationException">When the main challenge has not set</exception>
+    /// <para name="failedMessage">User-Friendly Failed Message</para>
+    public Operation<TResult> SetAndSuccessIf(Func<TResult, bool> challengeLambda, string failedMessage)
+    {
+        if (_mainChallenge is null)
+            throw new InvalidOperationException("There is no main challenge to make it Or logic");
+        _andSuccessChallenges.Enqueue((challengeLambda, failedMessage));
+        return this;
+    }
+
+    /// <summary>
     /// Provide proper lambda to handle exception user-friendly message.
     /// Consider that this lambda must not throw any exception
     /// </summary>
@@ -81,7 +98,8 @@ public class Operation<TResult> where TResult : class
 
         var operationResult = ExecuteOperation();
         var mainChallengeStatus = ExecuteMainChallenge(operationResult);
-        var finalResult = ExecuteSuccessOrChallenges(operationResult, mainChallengeStatus);
+        var andChallengesResult = ExecuteSuccessAndChallenge(operationResult, mainChallengeStatus);
+        var finalResult = ExecuteSuccessOrChallenges(operationResult, andChallengesResult);
         return finalResult;
     }
 
@@ -106,11 +124,11 @@ public class Operation<TResult> where TResult : class
         ChallengeResult mainChallengeResult)
     {
         if (mainChallengeResult.IsSuccess) return operationResult;
-        
-        bool overallStatus = false;
+
+        var overallStatus = false;
         foreach (var challenge in _orSuccessChallenges)
         {
-            var challengeResult = challenge(operationResult.Result);
+            var challengeResult = challenge(operationResult.Result!); //Result is not able being null 
             overallStatus = challengeResult;
             if (challengeResult) break; // Short circuit
         }
@@ -119,6 +137,32 @@ public class Operation<TResult> where TResult : class
         {
             Result = overallStatus ? operationResult.Result : null,
             Failure = overallStatus ? null : new OperationFailure(mainChallengeResult.ChallengeResultMessage)
+        };
+    }
+
+    private ChallengeResult ExecuteSuccessAndChallenge(
+        OperationResult<TResult> operationResult,
+        ChallengeResult mainChallengeResult)
+    {
+        if (!mainChallengeResult.IsSuccess)
+            return new ChallengeResult
+            {
+                IsSuccess = false,
+                ChallengeResultMessage = mainChallengeResult.ChallengeResultMessage
+            };
+
+        var (overallStatus, failedMessage) = (true, "");
+        foreach (var challengeWrapper in _andSuccessChallenges)
+        {
+            var challengeResult = challengeWrapper.challenge(operationResult.Result!);
+            (overallStatus, failedMessage) = (challengeResult, challengeWrapper.failedMessage);
+            if (!overallStatus) break; //Looking for false to short-circuit
+        }
+
+        return new ChallengeResult
+        {
+            IsSuccess = overallStatus,
+            ChallengeResultMessage = failedMessage
         };
     }
 
