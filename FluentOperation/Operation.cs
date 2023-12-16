@@ -6,6 +6,7 @@ public sealed class Operation<TResult> where TResult : class
 {
     private Func<Task<TResult>>? _asyncOperationLambda;
     private Func<TResult>? _operationLambda;
+    
     private Func<Exception, string>? _exceptionLambda;
     private (Func<TResult, bool> challenge, string failedChallengeMessage)? _mainChallenge = null;
 
@@ -26,7 +27,7 @@ public sealed class Operation<TResult> where TResult : class
         return this;
     }
 
-    public Operation<TResult> SetAsyncOperation(Func<Task<TResult>> asyncOperationLambda)
+    public Operation<TResult> SetOperation(Func<Task<TResult>> asyncOperationLambda)
     {
         if (_operationLambda is not null || _asyncOperationLambda is not null)
             throw new InvalidOperationException("Operation lambda has been set before");

@@ -10,4 +10,9 @@ public static class OperationBuilder
         var instance = new Operation<TResult>();
         return instance;
     }
+
+    public static DemandOperation<TResult> CreateDemandOperation<TResult>() where TResult : class
+    {
+        return new DemandOperation<TResult>();
+    }
 }
