@@ -7,9 +7,9 @@ public class OperationSample
         
     }
 
-    public string SayHello(string status)
+    public Task<string> SayHello(string status)
     {
-        return "Hello "+status ;
+        return Task.FromResult("Well done");
     }
     
 }

@@ -4,6 +4,7 @@ namespace FluentOperation;
 
 public sealed class Operation<TResult> where TResult : class
 {
+    private Func<Task<TResult>>? _asyncOperationLambda;
     private Func<TResult>? _operationLambda;
     private Func<Exception, string>? _exceptionLambda;
     private (Func<TResult, bool> challenge, string failedChallengeMessage)? _mainChallenge = null;
@@ -19,12 +20,19 @@ public sealed class Operation<TResult> where TResult : class
     /// <exception cref="InvalidOperationException">The operation lambda is not mutable</exception>
     public Operation<TResult> SetOperation(Func<TResult> operationLambda)
     {
-        if (_operationLambda is not null)
+        if (_operationLambda is not null || _asyncOperationLambda is not null)
             throw new InvalidOperationException("Operation lambda has been set before");
         _operationLambda = operationLambda;
         return this;
     }
 
+    public Operation<TResult> SetAsyncOperation(Func<Task<TResult>> asyncOperationLambda)
+    {
+        if (_operationLambda is not null || _asyncOperationLambda is not null)
+            throw new InvalidOperationException("Operation lambda has been set before");
+        _asyncOperationLambda = asyncOperationLambda;
+        return this;
+    }
     /// <summary>
     /// Main challenge will be executed against the result of main operation leave it blank if you want to handle challenges with exceptions
     /// </summary>
@@ -103,6 +111,19 @@ public sealed class Operation<TResult> where TResult : class
         return finalResult;
     }
 
+    public async Task<OperationResult<TResult>> ExecuteAsync()
+    {
+        if (IsExecuted)
+            throw new InvalidOperationException("The operation has been ran before");
+        if (_asyncOperationLambda is null)
+            throw new InvalidOperationException("Operation lambda must be set before execute operation");
+        var operationResult = await ExecuteAsyncOperation();
+        var mainChallengeStatus = ExecuteMainChallenge(operationResult);
+        var andChallengesResult = ExecuteSuccessAndChallenge(operationResult, mainChallengeStatus);
+        var finalResult = ExecuteSuccessOrChallenges(operationResult, andChallengesResult);
+        return finalResult;
+    }
+    
     private ChallengeResult ExecuteMainChallenge(OperationResult<TResult> operationResult)
     {
         if (operationResult is { IsSuccess: false } or { Result: null } || _mainChallenge is null)
@@ -178,7 +199,36 @@ public sealed class Operation<TResult> where TResult : class
         }
         catch (Exception e)
         {
-            String? handledUserMessage = null;
+            string? handledUserMessage = null;
+            if (_exceptionLambda is not null)
+                handledUserMessage = _exceptionLambda(e);
+            return new OperationResult<TResult>
+            {
+                Failure = new OperationFailure
+                {
+                    Exception = e,
+                    UserMessage = handledUserMessage
+                }
+            };
+        }
+        finally
+        {
+            IsExecuted = true;
+        }
+    }
+    private async Task<OperationResult<TResult>> ExecuteAsyncOperation()
+    {
+        try
+        {
+            var result = await _asyncOperationLambda!();
+            return new OperationResult<TResult>
+            {
+                Result = result
+            };
+        }
+        catch (Exception e)
+        {
+            string? handledUserMessage = null;
             if (_exceptionLambda is not null)
                 handledUserMessage = _exceptionLambda(e);
             return new OperationResult<TResult>
