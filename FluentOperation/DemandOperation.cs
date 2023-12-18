@@ -55,15 +55,28 @@ public class DemandOperation<TResult> where TResult : class
         {
             Result = _operationResult
         };
-        if (_exceptionFlatter is not null)
-        {
-            _exceptionFlatter.Complete();
-            _exceptionFlatter.TryReceiveAll(out var errors);
-            result.Failure = errors is null || errors.Count == 0
-                ? null
-                : new OperationFailure(string.Join(',', errors.Select(s => s.UserMessage)));
-        }
-
+        ChooseExceptionStrategy();
+        var errors = GetOccuredExceptions();
+        result.Failures.AddRange(errors);
+        
         return result;
+        // Provide general exception flatter if exception flatter is not defined 
+        void ChooseExceptionStrategy()
+        {
+            if (_exceptionFlatter is not null) return;
+            _exceptionFlatter = new TransformBlock<Exception, OperationFailure>(ac => new OperationFailure
+            {
+                Exception = ac,
+                UserMessage = ac.Message
+            });
+        } 
+        // Return all of occured exception
+        List<OperationFailure> GetOccuredExceptions()
+        {
+            _exceptions.Complete();
+            if (_exceptionFlatter!.TryReceiveAll(out var errors))
+                return errors?.ToList() ?? new List<OperationFailure>();
+            return new List<OperationFailure>();
+        }
     }
 }

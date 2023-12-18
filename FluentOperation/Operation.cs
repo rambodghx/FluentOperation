@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 
 namespace FluentOperation;
 
+[Obsolete("Use The Demand Version")]
 public sealed class Operation<TResult> where TResult : class
 {
     private Func<Task<TResult>>? _asyncOperationLambda;
@@ -158,7 +159,7 @@ public sealed class Operation<TResult> where TResult : class
         return new OperationResult<TResult>
         {
             Result = overallStatus ? operationResult.Result : null,
-            Failure = overallStatus ? null : new OperationFailure(mainChallengeResult.ChallengeResultMessage)
+            // Failure = overallStatus ? null : new OperationFailure(mainChallengeResult.ChallengeResultMessage)
         };
     }
 
@@ -205,11 +206,11 @@ public sealed class Operation<TResult> where TResult : class
                 handledUserMessage = _exceptionLambda(e);
             return new OperationResult<TResult>
             {
-                Failure = new OperationFailure
-                {
-                    Exception = e,
-                    UserMessage = handledUserMessage
-                }
+                // Failure = new OperationFailure
+                // {
+                //     Exception = e,
+                //     UserMessage = handledUserMessage
+                // }
             };
         }
         finally
@@ -234,11 +235,11 @@ public sealed class Operation<TResult> where TResult : class
                 handledUserMessage = _exceptionLambda(e);
             return new OperationResult<TResult>
             {
-                Failure = new OperationFailure
-                {
-                    Exception = e,
-                    UserMessage = handledUserMessage
-                }
+                // Failure = new OperationFailure
+                // {
+                //     Exception = e,
+                //     UserMessage = handledUserMessage
+                // }
             };
         }
         finally
