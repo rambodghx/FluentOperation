@@ -7,7 +7,6 @@ public class DemandOperation<TResult> where TResult : class
     private readonly BufferBlock<Exception> _exceptions = new();
     private TransformBlock<Exception, OperationFailure>? _exceptionFlatter;
     private TResult? _operationResult;
-
     public DemandOperation<TResult> Execute(Func<TResult> mainLambda)
     {
         try
@@ -58,7 +57,8 @@ public class DemandOperation<TResult> where TResult : class
         ChooseExceptionStrategy();
         var errors = GetOccuredExceptions();
         result.Failures.AddRange(errors);
-        
+        if (result.Result is null && errors.Count == 0)
+            throw new InvalidOperationException("Main operation is not defined");
         return result;
         // Provide general exception flatter if exception flatter is not defined 
         void ChooseExceptionStrategy()

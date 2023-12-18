@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentOperation", "FluentOp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentOperationUsage", "FluentOperationUsage\FluentOperationUsage.csproj", "{A54E4E31-34FA-460E-A141-F2508A17D3EA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestFluentOperation", "TestFluentOperation\TestFluentOperation.csproj", "{52DA3C24-CAE8-47D3-B82E-E1B973DED265}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{A54E4E31-34FA-460E-A141-F2508A17D3EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A54E4E31-34FA-460E-A141-F2508A17D3EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A54E4E31-34FA-460E-A141-F2508A17D3EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52DA3C24-CAE8-47D3-B82E-E1B973DED265}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52DA3C24-CAE8-47D3-B82E-E1B973DED265}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52DA3C24-CAE8-47D3-B82E-E1B973DED265}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52DA3C24-CAE8-47D3-B82E-E1B973DED265}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
