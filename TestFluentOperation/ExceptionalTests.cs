@@ -58,4 +58,33 @@ public class ExceptionalTests
         Assert.Single(result.Failures);
         Assert.NotEqual("Unknown",result.Failures.FirstOrDefault()!.UserMessage!);
     }
+
+    [Fact]
+    public void Is_InFlattedExceptions_Works()
+    {
+        var operation = OperationBuilder.CreateDemandOperation<string>();
+        operation.FlatException(ex => ex switch
+        {
+            EmptyException => "Empty",
+            _ => "Unknown"
+        });
+        operation.Execute(() => throw new NullException(""));
+        var result = operation.GetResult();
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Result);
+        Assert.Single(result.Failures);
+        Assert.NotEqual("Empty",result.Failures.FirstOrDefault()!.UserMessage!);
+    }
+
+    [Fact]
+    public void Is_UnhandledExceptions_Works()
+    {
+        var operation = OperationBuilder.CreateDemandOperation<string>();
+        operation.Execute(() => throw new NullException("Nulled"));
+        var result = operation.GetResult();
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Result);
+        Assert.Single(result.Failures);
+        Assert.NotNull(result.Failures.FirstOrDefault()!.UserMessage);
+    }
 }
