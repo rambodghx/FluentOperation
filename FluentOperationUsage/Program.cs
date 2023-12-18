@@ -3,13 +3,10 @@ using System.Transactions;
 using FluentOperation;
 using FluentOperationUsage;
 
-var res = await OperationBuilder.CreateDemandOperation<string>()
-    .ExecuteAsync(()=>Task.FromResult("throw new InvalidCastException(\"Wow !!!\")"))
-    .FlatException(ex=>ex switch
-    {
-        InvalidDataException => "Invalid data",
-        _ => "Unknown error"
-    })
-    .GetResult();
-
-Console.WriteLine(res);
+var ac = new BufferBlock<string>();
+var dc = new TransformBlock<string, int>(ac => ac.Length);
+ac.LinkTo(dc);
+ac.Post("hm");
+ac.Post("hm2");
+dc.LinkTo(new ActionBlock<int>(Console.WriteLine));
+ac.Completion.Wait();

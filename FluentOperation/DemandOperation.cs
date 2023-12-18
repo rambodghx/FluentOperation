@@ -1,12 +1,14 @@
+using System.Diagnostics;
 using System.Threading.Tasks.Dataflow;
 
 namespace FluentOperation;
 
 public class DemandOperation<TResult> where TResult : class
 {
-    private readonly BufferBlock<Exception> _exceptions = new();
-    private TransformBlock<Exception, OperationFailure>? _exceptionFlatter;
+    private List<Exception> _exceptions = new();
+    private Func<Exception, string>? _exceptionFlatterLambda;
     private TResult? _operationResult;
+
     public DemandOperation<TResult> Execute(Func<TResult> mainLambda)
     {
         try
@@ -15,7 +17,7 @@ public class DemandOperation<TResult> where TResult : class
         }
         catch (Exception e)
         {
-            _exceptions.Post(e);
+            _exceptions.Add(e);
         }
 
         return this;
@@ -29,7 +31,7 @@ public class DemandOperation<TResult> where TResult : class
         }
         catch (Exception e)
         {
-            _exceptions.Post(e);
+            _exceptions.Add(e);
         }
 
         return this;
@@ -37,14 +39,9 @@ public class DemandOperation<TResult> where TResult : class
 
     public DemandOperation<TResult> FlatException(Func<Exception, string> exceptionLambda)
     {
-        if (_exceptionFlatter is not null)
+        if (_exceptionFlatterLambda is not null)
             throw new InvalidOperationException("Exception lambda has set before");
-        _exceptionFlatter = new(ex => new OperationFailure
-        {
-            Exception = ex,
-            UserMessage = exceptionLambda(ex)
-        });
-        _exceptions.LinkTo(_exceptionFlatter);
+        _exceptionFlatterLambda = exceptionLambda;
         return this;
     }
 
@@ -55,28 +52,21 @@ public class DemandOperation<TResult> where TResult : class
             Result = _operationResult
         };
         ChooseExceptionStrategy();
-        var errors = GetOccuredExceptions();
+        IEnumerable<OperationFailure> errors = GetOccuredExceptions();
         result.Failures.AddRange(errors);
-        if (result.Result is null && errors.Count == 0)
+        if (result.Result is null && !errors.Any())
             throw new InvalidOperationException("Main operation is not defined");
+        
         return result;
+
         // Provide general exception flatter if exception flatter is not defined 
-        void ChooseExceptionStrategy()
-        {
-            if (_exceptionFlatter is not null) return;
-            _exceptionFlatter = new TransformBlock<Exception, OperationFailure>(ac => new OperationFailure
-            {
-                Exception = ac,
-                UserMessage = ac.Message
-            });
-        } 
+        void ChooseExceptionStrategy() => _exceptionFlatterLambda ??= ex => ex.Message;
         // Return all of occured exception
-        List<OperationFailure> GetOccuredExceptions()
-        {
-            _exceptions.Complete();
-            if (_exceptionFlatter!.TryReceiveAll(out var errors))
-                return errors?.ToList() ?? new List<OperationFailure>();
-            return new List<OperationFailure>();
-        }
+        IEnumerable<OperationFailure> GetOccuredExceptions()
+            => _exceptions.Select(ex => new OperationFailure
+            {
+                Exception = ex,
+                UserMessage = _exceptionFlatterLambda!(ex)
+            });
     }
 }
