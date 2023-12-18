@@ -1,14 +1,16 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Threading.Tasks.Dataflow;
 
 namespace FluentOperation;
 
-public class DemandOperation<TResult> where TResult : class
+public class DemandOperation<TResult>
 {
     private List<Exception> _exceptions = new();
+    public ReadOnlyCollection<Exception> Exceptions => _exceptions.AsReadOnly();
     private Func<Exception, string>? _exceptionFlatterLambda;
     private TResult? _operationResult;
-
+    
     public DemandOperation<TResult> Execute(Func<TResult> mainLambda)
     {
         try
@@ -52,15 +54,16 @@ public class DemandOperation<TResult> where TResult : class
             Result = _operationResult
         };
         ChooseExceptionStrategy();
-        IEnumerable<OperationFailure> errors = GetOccuredExceptions();
+        var errors = GetOccuredExceptions();
         result.Failures.AddRange(errors);
         if (result.Result is null && !errors.Any())
             throw new InvalidOperationException("Main operation is not defined");
-        
+
         return result;
 
         // Provide general exception flatter if exception flatter is not defined 
         void ChooseExceptionStrategy() => _exceptionFlatterLambda ??= ex => ex.Message;
+
         // Return all of occured exception
         IEnumerable<OperationFailure> GetOccuredExceptions()
             => _exceptions.Select(ex => new OperationFailure

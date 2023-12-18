@@ -1,6 +1,6 @@
 namespace FluentOperation;
 
-public class OperationResult<TResult> where TResult : class
+public class OperationResult<TResult>
 {
     public bool IsSuccess => Failures.Count == 0;
     public TResult? Result { get; init; }
