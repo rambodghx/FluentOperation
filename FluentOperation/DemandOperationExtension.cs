@@ -2,6 +2,14 @@ namespace FluentOperation;
 
 public static class DemandOperationExtension
 {
+    public static async Task<DemandOperation<TResult>> Execute<TResult>(
+        this Task<DemandOperation<TResult>> operationTask,
+        Func<TResult> lambda)
+    {
+        var opTask = await operationTask;
+        opTask.Execute(lambda);
+        return opTask;
+    }
     public static Task<DemandOperation<TResult>> ExecuteAsync<TResult>(
         this DemandOperation<TResult> operation,
         Task<TResult> task
@@ -29,7 +37,15 @@ public static class DemandOperationExtension
         opTask.FlatException(exceptionLambda);
         return opTask;
     }
-    
+    public static async Task<DemandOperation<TResult>> OnException<TResult>(
+        this Task<DemandOperation<TResult>> operationTask,
+        Action<Exception> exceptionLambda
+    )
+    {
+        var opTask = await operationTask;
+        opTask.OnException(exceptionLambda);
+        return opTask;
+    }
     public static async Task<OperationResult<TResult>> GetResult<TResult>(
         this Task<DemandOperation<TResult>> operationTask
     )

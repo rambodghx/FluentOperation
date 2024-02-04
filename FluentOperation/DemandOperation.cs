@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Security;
 using System.Threading.Tasks.Dataflow;
 
 namespace FluentOperation;
@@ -9,10 +11,49 @@ public class DemandOperation<TResult>
     private List<Exception> _exceptions = new();
     public ReadOnlyCollection<Exception> Exceptions => _exceptions.AsReadOnly();
     private Func<Exception, string>? _exceptionFlatterLambda;
+    private Action<Exception>? _exceptionEventLambda;
+    private bool _isBreak = false;
     private TResult? _operationResult;
-    
+
+    public async Task<DemandOperation<TResult>> BreakIfAsync(Func<Task<bool>> breakLambda)
+    {
+        if (_operationResult is not null)
+            throw new InvalidOperationException("Break logic must be defined before Execute");
+        try
+        {
+            _isBreak = await breakLambda();
+            if (_isBreak) throw new VerificationException("Break logic executed");
+        }
+        catch (Exception e)
+        {
+            _isBreak = true;
+            _exceptions.Add(e);
+        }
+
+        return this;
+    }
+
+    public DemandOperation<TResult> BreakIf(Func<bool> breakLambda)
+    {
+        if (_operationResult is not null)
+            throw new InvalidOperationException("Break logic must be defined before Execute");
+        try
+        {
+            _isBreak = breakLambda();
+            if (_isBreak) throw new VerificationException("Break logic executed");
+        }
+        catch (Exception e)
+        {
+            _isBreak = true;
+            _exceptions.Add(e);
+        }
+
+        return this;
+    }
+
     public DemandOperation<TResult> Execute(Func<TResult> mainLambda)
     {
+        if (_isBreak) return this;
         try
         {
             _operationResult = mainLambda();
@@ -27,6 +68,7 @@ public class DemandOperation<TResult>
 
     public async Task<DemandOperation<TResult>> ExecuteAsync(Func<Task<TResult>> mainLambda)
     {
+        if (_isBreak) return this;
         try
         {
             _operationResult = await mainLambda();
@@ -36,6 +78,14 @@ public class DemandOperation<TResult>
             _exceptions.Add(e);
         }
 
+        return this;
+    }
+
+    public DemandOperation<TResult> OnException(Action<Exception> exceptionLambda)
+    {
+        if (_exceptionEventLambda is not null)
+            throw new InvalidOperationException("Exception event has set before");
+        _exceptionEventLambda = exceptionLambda;
         return this;
     }
 
@@ -53,6 +103,8 @@ public class DemandOperation<TResult>
         {
             Result = _operationResult
         };
+
+        RaiseExceptionEvent();
         ChooseExceptionStrategy();
         var errors = GetOccuredExceptions();
         result.Failures.AddRange(errors);
@@ -70,6 +122,14 @@ public class DemandOperation<TResult>
             {
                 Exception = ex,
                 UserMessage = _exceptionFlatterLambda!(ex)
+            });
+
+        // Raise action on each of them
+        void RaiseExceptionEvent()
+            => _exceptions.ForEach(ex =>
+            {
+                _exceptionEventLambda ??= _ => { };
+                _exceptionEventLambda(ex);
             });
     }
 }

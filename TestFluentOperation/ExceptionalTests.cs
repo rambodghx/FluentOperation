@@ -87,4 +87,65 @@ public class ExceptionalTests
         Assert.Single(result.Failures);
         Assert.NotNull(result.Failures.FirstOrDefault()!.UserMessage);
     }
+
+    [Fact]
+    public void Is_ExceptionAction_Works()
+    {
+        int errorsCount = 0;
+        var operation = OperationBuilder.CreateDemandOperation<string>();
+        operation.Execute(() => throw new NullException("Nulled"));
+        operation.Execute(() => throw new NullException("Nulled"));
+        operation.OnException((ex) => errorsCount++);
+        var result = operation.GetResult();
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Result);
+        Assert.Equal(2,result.Failures.Count);
+        Assert.NotNull(result.Failures.FirstOrDefault()!.UserMessage);
+        Assert.Equal(2,errorsCount);
+    }
+
+    [Fact]
+    public void Is_BreakIf_Works()
+    {
+        var operation = OperationBuilder.CreateDemandOperation<string>()
+            .BreakIf(() => true)
+            .Execute(() => "Done")
+            .GetResult();
+        Assert.False(operation.IsSuccess);
+        Assert.Null(operation.Result);
+        Assert.NotNull(operation.Failures.FirstOrDefault()!.UserMessage);
+    }
+    [Fact]
+    public void Is_BreakIfThrow_Works()
+    {
+        var operation = OperationBuilder.CreateDemandOperation<string>()
+            .BreakIf(() => throw new InvalidOperationException())
+            .Execute(() => "Done")
+            .GetResult();
+        Assert.False(operation.IsSuccess);
+        Assert.Null(operation.Result);
+        Assert.NotNull(operation.Failures.FirstOrDefault()!.UserMessage);
+    }
+    [Fact]
+    public async Task Is_BreakIfAsync_Works()
+    {
+        var operation = await OperationBuilder.CreateDemandOperation<string>()
+            .BreakIfAsync(() => Task.FromResult(true))
+            .Execute(() => "Done")
+            .GetResult();
+        Assert.False(operation.IsSuccess);
+        Assert.Null(operation.Result);
+        Assert.NotNull(operation.Failures.FirstOrDefault()!.UserMessage);
+    }
+    [Fact]
+    public async Task Is_BreakIfThrowAsync_Works()
+    {
+        var operation = await OperationBuilder.CreateDemandOperation<string>()
+            .BreakIfAsync(() => throw new InvalidOperationException())
+            .Execute(() => "Done")
+            .GetResult();
+        Assert.False(operation.IsSuccess);
+        Assert.Null(operation.Result);
+        Assert.NotNull(operation.Failures.FirstOrDefault()!.UserMessage);
+    }
 }

@@ -1,12 +1,5 @@
-﻿using System.Threading.Tasks.Dataflow;
-using System.Transactions;
-using FluentOperation;
-using FluentOperationUsage;
-
-var ac = new BufferBlock<string>();
-var dc = new TransformBlock<string, int>(ac => ac.Length);
-ac.LinkTo(dc);
-ac.Post("hm");
-ac.Post("hm2");
-dc.LinkTo(new ActionBlock<int>(Console.WriteLine));
-ac.Completion.Wait();
+﻿using System.Net;
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+app.MapGet("/", () => Results.Json(new {count = 10}));
+app.Run();
