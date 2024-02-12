@@ -27,6 +27,15 @@ public static class DemandOperationExtension
         await opTask.ExecuteAsync(task);
         return opTask;
     }
+    public static async Task<DemandOperation<TResult>> ExecuteAsync<TResult>(
+        this Task<DemandOperation<TResult>> operationTask,
+        Func<Task<TResult>> task
+    )
+    {
+        var opTask = await operationTask;
+        await opTask.ExecuteAsync(task);
+        return opTask;
+    }
 
     public static async Task<DemandOperation<TResult>> FlatException<TResult>(
         this Task<DemandOperation<TResult>> operationTask,

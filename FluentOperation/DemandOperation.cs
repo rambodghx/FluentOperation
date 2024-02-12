@@ -15,14 +15,15 @@ public class DemandOperation<TResult>
     private bool _isBreak = false;
     private TResult? _operationResult;
 
-    public async Task<DemandOperation<TResult>> BreakIfAsync(Func<Task<bool>> breakLambda)
+    public async Task<DemandOperation<TResult>> BreakIfAsync(Func<Task<bool>> breakLambda, string? breakMessage = null)
     {
+        if (_isBreak) return this; // Providing and logic over chained breakIf
         if (_operationResult is not null)
             throw new InvalidOperationException("Break logic must be defined before Execute");
         try
         {
             _isBreak = await breakLambda();
-            if (_isBreak) throw new VerificationException("Break logic executed");
+            if (_isBreak) throw new VerificationException(breakMessage ?? "Break logic executed");
         }
         catch (Exception e)
         {
@@ -33,14 +34,15 @@ public class DemandOperation<TResult>
         return this;
     }
 
-    public DemandOperation<TResult> BreakIf(Func<bool> breakLambda)
+    public DemandOperation<TResult> BreakIf(Func<bool> breakLambda, string? breakMessage = null)
     {
+        if (_isBreak) return this; // Providing and logic over chained breakIf
         if (_operationResult is not null)
             throw new InvalidOperationException("Break logic must be defined before Execute");
         try
         {
             _isBreak = breakLambda();
-            if (_isBreak) throw new VerificationException("Break logic executed");
+            if (_isBreak) throw new VerificationException(breakMessage ?? "Break logic executed");
         }
         catch (Exception e)
         {
@@ -80,7 +82,7 @@ public class DemandOperation<TResult>
 
         return this;
     }
-
+    
     public DemandOperation<TResult> OnException(Action<Exception> exceptionLambda)
     {
         if (_exceptionEventLambda is not null)
