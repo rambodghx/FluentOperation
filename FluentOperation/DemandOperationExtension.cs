@@ -2,6 +2,16 @@ namespace FluentOperation;
 
 public static class DemandOperationExtension
 {
+    public static async Task<DemandOperation<TResult>> BreakIfAsync<TResult>(
+        this Task<DemandOperation<TResult>> operationTask,
+        Func<Task<bool>> breakLambda,
+        string? breakMessage = null)
+    {
+        var opTask = await operationTask;
+        await opTask.BreakIfAsync(breakLambda,breakMessage);
+        return opTask;
+    }
+
     public static async Task<DemandOperation<TResult>> Execute<TResult>(
         this Task<DemandOperation<TResult>> operationTask,
         Func<TResult> lambda)
@@ -10,6 +20,7 @@ public static class DemandOperationExtension
         opTask.Execute(lambda);
         return opTask;
     }
+
     public static Task<DemandOperation<TResult>> ExecuteAsync<TResult>(
         this DemandOperation<TResult> operation,
         Task<TResult> task
@@ -27,6 +38,7 @@ public static class DemandOperationExtension
         await opTask.ExecuteAsync(task);
         return opTask;
     }
+
     public static async Task<DemandOperation<TResult>> ExecuteAsync<TResult>(
         this Task<DemandOperation<TResult>> operationTask,
         Func<Task<TResult>> task
@@ -46,6 +58,7 @@ public static class DemandOperationExtension
         opTask.FlatException(exceptionLambda);
         return opTask;
     }
+
     public static async Task<DemandOperation<TResult>> OnException<TResult>(
         this Task<DemandOperation<TResult>> operationTask,
         Action<Exception> exceptionLambda
@@ -55,6 +68,7 @@ public static class DemandOperationExtension
         opTask.OnException(exceptionLambda);
         return opTask;
     }
+
     public static async Task<OperationResult<TResult>> GetResult<TResult>(
         this Task<DemandOperation<TResult>> operationTask
     )
