@@ -2,6 +2,16 @@ namespace FluentOperation;
 
 public static class DemandOperationExtension
 {
+    public static async Task<DemandOperation<TResult>> BreakIfThrowsAny<TResult>(
+        this Task<DemandOperation<TResult>> operationTask,
+        Action breakLambda,
+        string breakMessage)
+    {
+        var opTask = await operationTask;
+        opTask.BreakIfThrowsAny(breakLambda,breakMessage);
+        return opTask;
+    }
+
     public static async Task<DemandOperation<TResult>> BreakIfAsync<TResult>(
         this Task<DemandOperation<TResult>> operationTask,
         Func<Task<bool>> breakLambda,

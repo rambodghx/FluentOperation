@@ -15,6 +15,24 @@ public class DemandOperation<TResult>
     private bool _isBreak = false;
     private TResult? _operationResult;
 
+    public DemandOperation<TResult> BreakIfThrowsAny(Action breakLambda, string breakMessage)
+    {
+        if (_isBreak) return this;
+        if (_operationResult is not null)
+            throw new InvalidOperationException("Break logic must be defined before execute");
+        try
+        {
+            breakLambda();
+        }
+        catch (Exception e)
+        {
+            _isBreak = true;
+            _exceptions.Add(new VerificationException(breakMessage,e));
+        }
+
+        return this;
+    }
+
     public async Task<DemandOperation<TResult>> BreakIfAsync(Func<Task<bool>> breakLambda, string? breakMessage = null)
     {
         if (_isBreak) return this; // Providing and logic over chained breakIf
@@ -82,7 +100,7 @@ public class DemandOperation<TResult>
 
         return this;
     }
-    
+
     public DemandOperation<TResult> OnException(Action<Exception> exceptionLambda)
     {
         if (_exceptionEventLambda is not null)
