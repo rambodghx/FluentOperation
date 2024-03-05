@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 namespace FluentOperation;
 
 [Obsolete("Use The Demand Version")]
-public sealed class Operation<TResult> where TResult : class
+public sealed class Operation<TResult>
 {
     private Func<Task<TResult>>? _asyncOperationLambda;
     private Func<TResult>? _operationLambda;
@@ -158,7 +158,7 @@ public sealed class Operation<TResult> where TResult : class
 
         return new OperationResult<TResult>
         {
-            Result = overallStatus ? operationResult.Result : null,
+            Result = overallStatus ? operationResult.Result : default(TResult),
             // Failure = overallStatus ? null : new OperationFailure(mainChallengeResult.ChallengeResultMessage)
         };
     }

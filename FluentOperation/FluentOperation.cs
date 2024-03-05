@@ -5,13 +5,13 @@
  */
 public static class OperationBuilder
 {
-    public static Operation<TResult> CreateOperation<TResult>() where TResult : class
+    public static Operation<TResult> CreateOperation<TResult>()
     {
         var instance = new Operation<TResult>();
         return instance;
     }
 
-    public static DemandOperation<TResult> CreateDemandOperation<TResult>() where TResult : class
+    public static DemandOperation<TResult> CreateDemandOperation<TResult>()
     {
         return new DemandOperation<TResult>();
     }

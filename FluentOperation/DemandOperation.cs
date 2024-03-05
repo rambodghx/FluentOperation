@@ -13,12 +13,13 @@ public class DemandOperation<TResult>
     private Func<Exception, string>? _exceptionFlatterLambda;
     private Action<Exception>? _exceptionEventLambda;
     private bool _isBreak = false;
+    private bool _isOperationExecuted = false;
     private TResult? _operationResult;
 
     public DemandOperation<TResult> BreakIfThrowsAny(Action breakLambda, string breakMessage)
     {
         if (_isBreak) return this;
-        if (_operationResult is not null)
+        if (_isOperationExecuted)
             throw new InvalidOperationException("Break logic must be defined before execute");
         try
         {
@@ -27,7 +28,7 @@ public class DemandOperation<TResult>
         catch (Exception e)
         {
             _isBreak = true;
-            _exceptions.Add(new VerificationException(breakMessage,e));
+            _exceptions.Add(new VerificationException(breakMessage, e));
         }
 
         return this;
@@ -36,7 +37,7 @@ public class DemandOperation<TResult>
     public async Task<DemandOperation<TResult>> BreakIfAsync(Func<Task<bool>> breakLambda, string? breakMessage = null)
     {
         if (_isBreak) return this; // Providing and logic over chained breakIf
-        if (_operationResult is not null)
+        if (_isOperationExecuted)
             throw new InvalidOperationException("Break logic must be defined before Execute");
         try
         {
@@ -55,7 +56,7 @@ public class DemandOperation<TResult>
     public DemandOperation<TResult> BreakIf(Func<bool> breakLambda, string? breakMessage = null)
     {
         if (_isBreak) return this; // Providing and logic over chained breakIf
-        if (_operationResult is not null)
+        if (_isOperationExecuted)
             throw new InvalidOperationException("Break logic must be defined before Execute");
         try
         {
@@ -82,6 +83,10 @@ public class DemandOperation<TResult>
         {
             _exceptions.Add(e);
         }
+        finally
+        {
+            _isOperationExecuted = true;
+        }
 
         return this;
     }
@@ -96,6 +101,10 @@ public class DemandOperation<TResult>
         catch (Exception e)
         {
             _exceptions.Add(e);
+        }
+        finally
+        {
+            _isOperationExecuted = true;
         }
 
         return this;
@@ -128,7 +137,7 @@ public class DemandOperation<TResult>
         ChooseExceptionStrategy();
         var errors = GetOccuredExceptions();
         result.Failures.AddRange(errors);
-        if (result.Result is null && !errors.Any())
+        if (result.Result is null && !errors.Any())//todo check logic on value type returns
             throw new InvalidOperationException("Main operation is not defined");
 
         return result;
