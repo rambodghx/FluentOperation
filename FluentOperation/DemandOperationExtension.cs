@@ -11,7 +11,15 @@ public static class DemandOperationExtension
         opTask.BreakIfThrowsAny(breakLambda,breakMessage);
         return opTask;
     }
-
+    public static async Task<DemandOperation<TResult>> BreakIf<TResult>(
+        this Task<DemandOperation<TResult>> operationTask,
+        Func<bool> breakLambda,
+        string? breakMessage = null)
+    {
+        var opTask = await operationTask;
+        opTask.BreakIf(breakLambda,breakMessage);
+        return opTask;
+    }
     public static async Task<DemandOperation<TResult>> BreakIfAsync<TResult>(
         this Task<DemandOperation<TResult>> operationTask,
         Func<Task<bool>> breakLambda,
