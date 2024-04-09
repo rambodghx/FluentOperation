@@ -12,7 +12,12 @@ public class OperationResult<TResult>
     public String UserFailure()
         => string.Join(" - ", Failures.Select(s => s.UserMessage));
 
-    public OperationResult() { }
+    public string[] FailuresAsArray() => Failures.Select(s => s.UserMessage).ToArray();
+
+    public OperationResult()
+    {
+    }
+
     private OperationResult(TResult? result) => Result = result;
     public static OperationResult<TResult> Success(TResult result) => new(result);
 
