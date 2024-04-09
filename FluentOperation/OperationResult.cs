@@ -11,8 +11,10 @@ public class OperationResult<TResult>
 
     public String UserFailure()
         => string.Join(" - ", Failures.Select(s => s.UserMessage));
-    
-    public static OperationResult<TResult> Success() => new();
+
+    public OperationResult() { }
+    private OperationResult(TResult? result) => Result = result;
+    public static OperationResult<TResult> Success(TResult result) => new(result);
 
     public static OperationResult<TResult> Failed(IEnumerable<OperationFailure> errors) => new()
     {
