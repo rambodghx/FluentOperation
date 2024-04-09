@@ -110,6 +110,52 @@ public class DemandOperation<TResult>
         return this;
     }
 
+    public DemandOperation<TResult> ReflectLowerExecution(Func<OperationResult<TResult>> lowerLambda)
+    {
+        if (_isBreak) return this;
+        if (_isOperationExecuted)
+            throw new InvalidOperationException("This method must be called instead of Execute()");
+        try
+        {
+            var lowerRes = lowerLambda();
+            _operationResult = lowerRes.Result;
+            _exceptions.AddRange(lowerRes.Failures.Select(s => s.Exception));
+        }
+        catch (Exception e)
+        {
+            _exceptions.Add(e);
+        }
+        finally
+        {
+            _isOperationExecuted = true;
+        }
+
+        return this;
+    }
+
+    public async Task<DemandOperation<TResult>> ReflectLowerExecutionAsync(Func<Task<OperationResult<TResult>>> lowerLambda)
+    {
+        if (_isBreak) return this;
+        if (_isOperationExecuted)
+            throw new InvalidOperationException("This method must be called instead of Execute()");
+        try
+        {
+            var lowerRes = await lowerLambda();
+            _operationResult = lowerRes.Result;
+            _exceptions.AddRange(lowerRes.Failures.Select(s => s.Exception));
+        }
+        catch (Exception e)
+        {
+            _exceptions.Add(e);
+        }
+        finally
+        {
+            _isOperationExecuted = true;
+        }
+
+        return this;
+    }
+
     public DemandOperation<TResult> OnException(Action<Exception> exceptionLambda)
     {
         if (_exceptionEventLambda is not null)
@@ -137,7 +183,7 @@ public class DemandOperation<TResult>
         ChooseExceptionStrategy();
         var errors = GetOccuredExceptions();
         result.Failures.AddRange(errors);
-        if (result.Result is null && !errors.Any())//todo check logic on value type returns
+        if (result.Result is null && !errors.Any()) //todo check logic on value type returns
             throw new InvalidOperationException("Main operation is not defined");
 
         return result;
@@ -147,11 +193,10 @@ public class DemandOperation<TResult>
 
         // Return all of occured exception
         IEnumerable<OperationFailure> GetOccuredExceptions()
-            => _exceptions.Select(ex => new OperationFailure
-            {
-                Exception = ex,
-                UserMessage = _exceptionFlatterLambda!(ex)
-            });
+            => _exceptions.Select(ex => new OperationFailure(
+                exception: ex,
+                userMessage: _exceptionFlatterLambda!(ex)
+            ));
 
         // Raise action on each of them
         void RaiseExceptionEvent()

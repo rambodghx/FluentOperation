@@ -8,28 +8,42 @@ public static class DemandOperationExtension
         string breakMessage)
     {
         var opTask = await operationTask;
-        opTask.BreakIfThrowsAny(breakLambda,breakMessage);
+        opTask.BreakIfThrowsAny(breakLambda, breakMessage);
         return opTask;
     }
+
     public static async Task<DemandOperation<TResult>> BreakIf<TResult>(
         this Task<DemandOperation<TResult>> operationTask,
         Func<bool> breakLambda,
         string? breakMessage = null)
     {
         var opTask = await operationTask;
-        opTask.BreakIf(breakLambda,breakMessage);
+        opTask.BreakIf(breakLambda, breakMessage);
         return opTask;
     }
+
     public static async Task<DemandOperation<TResult>> BreakIfAsync<TResult>(
         this Task<DemandOperation<TResult>> operationTask,
         Func<Task<bool>> breakLambda,
         string? breakMessage = null)
     {
         var opTask = await operationTask;
-        await opTask.BreakIfAsync(breakLambda,breakMessage);
+        await opTask.BreakIfAsync(breakLambda, breakMessage);
         return opTask;
     }
 
+    public static async Task<DemandOperation<TResult>> ReflectLowerExecution<TResult>(
+        this Task<DemandOperation<TResult>> operationTask, Func<OperationResult<TResult>> lowerLambda)
+    {
+        var opTask = await operationTask;
+        return opTask.ReflectLowerExecution(lowerLambda);
+    }
+    public static async Task<DemandOperation<TResult>> ReflectLowerExecutionAsync<TResult>(
+        this Task<DemandOperation<TResult>> operationTask, Func<Task<OperationResult<TResult>>> lowerLambda)
+    {
+        var opTask = await operationTask;
+        return await opTask.ReflectLowerExecutionAsync(lowerLambda);
+    }
     public static async Task<DemandOperation<TResult>> Execute<TResult>(
         this Task<DemandOperation<TResult>> operationTask,
         Func<TResult> lambda)

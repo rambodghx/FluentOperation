@@ -10,20 +10,14 @@ public class ExceptionalTests
     {
         var operation = OperationBuilder.CreateDemandOperation<string>();
         operation.FlatException(_ => "");
-        Assert.Throws<InvalidOperationException>(() =>
-        {
-            operation.FlatException(_ => "");
-        });
+        Assert.Throws<InvalidOperationException>(() => { operation.FlatException(_ => ""); });
     }
 
     [Fact]
     public void Is_Uninitialized_GetResult_ThrowException()
     {
         var operation = OperationBuilder.CreateDemandOperation<string>();
-        Assert.Throws<InvalidOperationException>(() =>
-        {
-            operation.GetResult();
-        });
+        Assert.Throws<InvalidOperationException>(() => { operation.GetResult(); });
     }
 
     [Fact]
@@ -40,8 +34,9 @@ public class ExceptionalTests
         Assert.False(result.IsSuccess);
         Assert.Null(result.Result);
         Assert.Single(result.Failures);
-        Assert.NotEqual("Unknown",result.Failures.FirstOrDefault()!.UserMessage!);
+        Assert.NotEqual("Unknown", result.Failures.FirstOrDefault()!.UserMessage!);
     }
+
     [Fact]
     public void Is_ExceptionFlatter_Works_Ordered()
     {
@@ -56,7 +51,7 @@ public class ExceptionalTests
         Assert.False(result.IsSuccess);
         Assert.Null(result.Result);
         Assert.Single(result.Failures);
-        Assert.NotEqual("Unknown",result.Failures.FirstOrDefault()!.UserMessage!);
+        Assert.NotEqual("Unknown", result.Failures.FirstOrDefault()!.UserMessage!);
     }
 
     [Fact]
@@ -73,7 +68,7 @@ public class ExceptionalTests
         Assert.False(result.IsSuccess);
         Assert.Null(result.Result);
         Assert.Single(result.Failures);
-        Assert.NotEqual("Empty",result.Failures.FirstOrDefault()!.UserMessage!);
+        Assert.NotEqual("Empty", result.Failures.FirstOrDefault()!.UserMessage!);
     }
 
     [Fact]
@@ -99,9 +94,9 @@ public class ExceptionalTests
         var result = operation.GetResult();
         Assert.False(result.IsSuccess);
         Assert.Null(result.Result);
-        Assert.Equal(2,result.Failures.Count);
+        Assert.Equal(2, result.Failures.Count);
         Assert.NotNull(result.Failures.FirstOrDefault()!.UserMessage);
-        Assert.Equal(2,errorsCount);
+        Assert.Equal(2, errorsCount);
     }
 
     [Fact]
@@ -115,6 +110,7 @@ public class ExceptionalTests
         Assert.Null(operation.Result);
         Assert.NotNull(operation.Failures.FirstOrDefault()!.UserMessage);
     }
+
     [Fact]
     public void Is_BreakIfThrow_Works()
     {
@@ -126,6 +122,7 @@ public class ExceptionalTests
         Assert.Null(operation.Result);
         Assert.NotNull(operation.Failures.FirstOrDefault()!.UserMessage);
     }
+
     [Fact]
     public async Task Is_BreakIfAsync_Works()
     {
@@ -137,6 +134,7 @@ public class ExceptionalTests
         Assert.Null(operation.Result);
         Assert.NotNull(operation.Failures.FirstOrDefault()!.UserMessage);
     }
+
     [Fact]
     public async Task Is_BreakIfThrowAsync_Works()
     {
@@ -147,5 +145,22 @@ public class ExceptionalTests
         Assert.False(operation.IsSuccess);
         Assert.Null(operation.Result);
         Assert.NotNull(operation.Failures.FirstOrDefault()!.UserMessage);
+    }
+
+    [Fact]
+    public void Is_ReflectedExecutionException_Works()
+    {
+        var lowerOp = new OperationResult<string>
+        {
+            Result = "Done",
+            Failures = new List<OperationFailure>
+            {
+                new("E1")
+            }
+        };
+        var operation = OperationBuilder.CreateDemandOperation<string>()
+            .ReflectLowerExecution(() => lowerOp)
+            .GetResult();
+        Assert.False(operation.IsSuccess);
     }
 }
