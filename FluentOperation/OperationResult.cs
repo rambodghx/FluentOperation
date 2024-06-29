@@ -3,10 +3,8 @@ namespace FluentOperation;
 public enum OperationStatus
 {
     NotExecuted,
-    DoneExecution,
-    FailedExecution,
+    Executed,
     Broken,
-    GuardPassed
 }
 public class OperationResult<TResult>
 {
