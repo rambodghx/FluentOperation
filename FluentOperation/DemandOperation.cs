@@ -8,17 +8,19 @@ namespace FluentOperation;
 
 public class DemandOperation<TResult>
 {
+    public OperationStatus OperationStatus { get; private set; }
+
     private List<Exception> _exceptions = new();
     public ReadOnlyCollection<Exception> Exceptions => _exceptions.AsReadOnly();
     private Func<Exception, string>? _exceptionFlatterLambda;
     private Action<Exception>? _exceptionEventLambda;
-    private bool _isBreak = false;
+    // private bool _isBreak = false;
     private bool _isOperationExecuted = false;
     private TResult? _operationResult;
-
+    
     public DemandOperation<TResult> BreakIfThrowsAny(Action breakLambda, string breakMessage)
     {
-        if (_isBreak) return this;
+        if (OperationStatus is OperationStatus.Broken) return this; // Providing and logic over chained breakIf
         if (_isOperationExecuted)
             throw new InvalidOperationException("Break logic must be defined before execute");
         try
@@ -27,7 +29,8 @@ public class DemandOperation<TResult>
         }
         catch (Exception e)
         {
-            _isBreak = true;
+            // _isBreak = true;
+            OperationStatus = OperationStatus.Broken;
             _exceptions.Add(new VerificationException(breakMessage, e));
         }
 
@@ -36,17 +39,23 @@ public class DemandOperation<TResult>
 
     public async Task<DemandOperation<TResult>> BreakIfAsync(Func<Task<bool>> breakLambda, string? breakMessage = null)
     {
-        if (_isBreak) return this; // Providing and logic over chained breakIf
+        if (OperationStatus is OperationStatus.Broken) return this; // Providing and logic over chained breakIf
         if (_isOperationExecuted)
             throw new InvalidOperationException("Break logic must be defined before Execute");
         try
         {
-            _isBreak = await breakLambda();
-            if (_isBreak) throw new VerificationException(breakMessage ?? "Break logic executed");
+            if (await breakLambda())
+            {
+                OperationStatus = OperationStatus.Broken;
+                throw new VerificationException(breakMessage ?? "Break logic executed");
+            }
+            // _isBreak = await breakLambda();
+            // if (_isBreak) throw new VerificationException(breakMessage ?? "Break logic executed");
         }
         catch (Exception e)
         {
-            _isBreak = true;
+            // _isBreak = true;
+            OperationStatus = OperationStatus.Broken;
             _exceptions.Add(e);
         }
 
@@ -55,17 +64,23 @@ public class DemandOperation<TResult>
 
     public DemandOperation<TResult> BreakIf(Func<bool> breakLambda, string? breakMessage = null)
     {
-        if (_isBreak) return this; // Providing and logic over chained breakIf
+        if (OperationStatus is OperationStatus.Broken) return this; // Providing and logic over chained breakIf
         if (_isOperationExecuted)
             throw new InvalidOperationException("Break logic must be defined before Execute");
         try
         {
-            _isBreak = breakLambda();
-            if (_isBreak) throw new VerificationException(breakMessage ?? "Break logic executed");
+            if (breakLambda())
+            {
+                OperationStatus = OperationStatus.Broken;
+                throw new VerificationException(breakMessage ?? "Break logic executed");
+            }
+            // _isBreak = breakLambda();
+            // if (_isBreak) throw new VerificationException(breakMessage ?? "Break logic executed");
         }
         catch (Exception e)
         {
-            _isBreak = true;
+            // _isBreak = true;
+            OperationStatus = OperationStatus.Broken;
             _exceptions.Add(e);
         }
 
@@ -74,7 +89,7 @@ public class DemandOperation<TResult>
 
     public DemandOperation<TResult> Execute(Func<TResult> mainLambda)
     {
-        if (_isBreak) return this;
+        if (OperationStatus is OperationStatus.Broken) return this;
         try
         {
             _operationResult = mainLambda();
@@ -93,7 +108,7 @@ public class DemandOperation<TResult>
 
     public async Task<DemandOperation<TResult>> ExecuteAsync(Func<Task<TResult>> mainLambda)
     {
-        if (_isBreak) return this;
+        if (OperationStatus is OperationStatus.Broken) return this;
         try
         {
             _operationResult = await mainLambda();
@@ -112,7 +127,7 @@ public class DemandOperation<TResult>
 
     public DemandOperation<TResult> ReflectLowerExecution(Func<OperationResult<TResult>> lowerLambda)
     {
-        if (_isBreak) return this;
+        if (OperationStatus is OperationStatus.Broken) return this;
         if (_isOperationExecuted)
             throw new InvalidOperationException("This method must be called instead of Execute()");
         try
@@ -135,7 +150,7 @@ public class DemandOperation<TResult>
 
     public async Task<DemandOperation<TResult>> ReflectLowerExecutionAsync(Func<Task<OperationResult<TResult>>> lowerLambda)
     {
-        if (_isBreak) return this;
+        if (OperationStatus is OperationStatus.Broken) return this;
         if (_isOperationExecuted)
             throw new InvalidOperationException("This method must be called instead of Execute()");
         try

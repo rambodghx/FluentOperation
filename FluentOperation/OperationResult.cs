@@ -1,5 +1,13 @@
 namespace FluentOperation;
 
+public enum OperationStatus
+{
+    NotExecuted,
+    DoneExecution,
+    FailedExecution,
+    Broken,
+    GuardPassed
+}
 public class OperationResult<TResult>
 {
     public bool IsSuccess => Failures.Count == 0;

@@ -53,12 +53,12 @@ public static class DemandOperationExtension
         return opTask;
     }
 
-    public static Task<DemandOperation<TResult>> ExecuteAsync<TResult>(
+    public static async Task<DemandOperation<TResult>> ExecuteAsync<TResult>(
         this DemandOperation<TResult> operation,
         Task<TResult> task
     )
     {
-        return operation.ExecuteAsync(() => task);
+        return await operation.ExecuteAsync(() => task);
     }
 
     public static async Task<DemandOperation<TResult>> ExecuteAsync<TResult>(
