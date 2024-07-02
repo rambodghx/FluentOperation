@@ -14,8 +14,6 @@ public class DemandOperation<TResult>
     public ReadOnlyCollection<Exception> Exceptions => _exceptions.AsReadOnly();
     private Func<Exception, string>? _exceptionFlatterLambda;
     private Action<Exception>? _exceptionEventLambda;
-    // private bool _isBreak = false;
-    // private bool _isOperationExecuted = false;
     private TResult? _operationResult;
     
     public DemandOperation<TResult> BreakIfThrowsAny(Action breakLambda, string breakMessage)
@@ -29,7 +27,6 @@ public class DemandOperation<TResult>
         }
         catch (Exception e)
         {
-            // _isBreak = true;
             OperationStatus = OperationStatus.Broken;
             _exceptions.Add(new VerificationException(breakMessage, e));
         }
@@ -49,12 +46,10 @@ public class DemandOperation<TResult>
                 OperationStatus = OperationStatus.Broken;
                 throw new VerificationException(breakMessage ?? "Break logic executed");
             }
-            // _isBreak = await breakLambda();
-            // if (_isBreak) throw new VerificationException(breakMessage ?? "Break logic executed");
+           
         }
         catch (Exception e)
         {
-            // _isBreak = true;
             OperationStatus = OperationStatus.Broken;
             _exceptions.Add(e);
         }
@@ -74,12 +69,10 @@ public class DemandOperation<TResult>
                 OperationStatus = OperationStatus.Broken;
                 throw new VerificationException(breakMessage ?? "Break logic executed");
             }
-            // _isBreak = breakLambda();
-            // if (_isBreak) throw new VerificationException(breakMessage ?? "Break logic executed");
+            
         }
         catch (Exception e)
         {
-            // _isBreak = true;
             OperationStatus = OperationStatus.Broken;
             _exceptions.Add(e);
         }
@@ -100,7 +93,6 @@ public class DemandOperation<TResult>
         }
         finally
         {
-            // _isOperationExecuted = true;
             OperationStatus = OperationStatus.Executed;
         }
 
@@ -120,7 +112,6 @@ public class DemandOperation<TResult>
         }
         finally
         {
-            // _isOperationExecuted = true;
             OperationStatus = OperationStatus.Executed;
         }
 
@@ -144,7 +135,6 @@ public class DemandOperation<TResult>
         }
         finally
         {
-            // _isOperationExecuted = true;
             OperationStatus = OperationStatus.Executed;
         }
 
@@ -168,7 +158,6 @@ public class DemandOperation<TResult>
         }
         finally
         {
-            // _isOperationExecuted = true;
             OperationStatus = OperationStatus.Executed;
         }
 
